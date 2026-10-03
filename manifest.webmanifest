@@ -1,0 +1,14 @@
+{
+  "name": "Leonida Stories — GTA VI fan web game",
+  "short_name": "Leonida",
+  "description": "A fan-made GTA VI-inspired open-world browser game set in Leonida.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#14051f",
+  "theme_color": "#14051f",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

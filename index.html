@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Leonida Stories — GTA VI fan web game</title>
+  <meta name="description" content="A fan-made, GTA VI-inspired open-world browser game set in the state of Leonida. Play as Lucia and Jason in Vice City, the Keys, Grassrivers and more.">
+  <meta name="theme-color" content="#14051f">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div id="hud-tr">
+      <div id="clock">09:00</div>
+      <div id="money">$0</div>
+      <div id="weapon"><span id="weapon-name">Pistol</span> <span id="ammo"></span></div>
+      <div class="bar health"><div id="hp"></div></div>
+      <div class="bar armor"><div id="ap"></div></div>
+      <div id="stars"></div>
+    </div>
+    <div id="char-badge"></div>
+    <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas></div>
+    <div id="speedo"></div>
+    <div id="help"></div>
+    <div id="area"></div>
+    <div id="vehname"></div>
+    <div id="objective"></div>
+    <div id="timer"></div>
+    <div id="subtitle"></div>
+    <div id="prompt"></div>
+    <div id="progress"><div></div></div>
+  </div>
+
+  <div id="big"><div class="big-title"></div><div class="big-sub"></div></div>
+  <div id="flash"></div>
+  <div id="hurt"></div>
+
+  <!-- Touch controls -->
+  <div id="touch" class="hidden">
+    <div id="joy-zone"></div>
+    <div id="joy-base"><div id="joy-knob"></div></div>
+    <div class="tbtns">
+      <button id="t-fire" class="big red">FIRE</button>
+      <button id="t-enter" class="big">CAR</button>
+      <button id="t-brake">BRAKE<br>RUN</button>
+      <button id="t-action">E</button>
+      <button id="t-weapon">GUN</button>
+    </div>
+    <div class="tbtns-top">
+      <button id="t-switch">⇄</button>
+      <button id="t-radio">📻</button>
+      <button id="t-map">☰</button>
+    </div>
+  </div>
+
+  <!-- Title screen -->
+  <div id="title">
+    <div class="title-inner">
+      <div class="logo">
+        <div class="logo-vi">VI</div>
+        <div class="logo-text">LEONIDA<br>STORIES</div>
+      </div>
+      <p class="tagline">A fan-made Grand Theft Auto VI–inspired web game. Not affiliated with Rockstar Games.</p>
+      <div id="title-chars"></div>
+      <div id="title-loading">Building the state of Leonida…</div>
+      <div id="title-buttons" class="hidden">
+        <button id="btn-continue" class="primary hidden">Continue</button>
+        <button id="btn-new" class="primary">New Game</button>
+        <button id="btn-guide">Leonida Guide</button>
+        <button id="btn-controls">Controls</button>
+      </div>
+      <p class="release">Real GTA VI release date: <b>November 19, 2026</b> · PS5 &amp; Xbox Series X|S</p>
+    </div>
+  </div>
+
+  <div id="guide-modal" class="modal hidden">
+    <div class="modal-box">
+      <button class="close">✕</button>
+      <h2>Leonida Guide</h2>
+      <div class="guide-content"></div>
+    </div>
+  </div>
+
+  <div id="controls-modal" class="modal hidden">
+    <div class="modal-box">
+      <button class="close">✕</button>
+      <h2>Controls</h2>
+      <div class="controls-content"></div>
+    </div>
+  </div>
+
+  <!-- Pause menu -->
+  <div id="pause" class="hidden">
+    <div class="pause-box">
+      <div class="tabs">
+        <button data-tab="map">Map</button>
+        <button data-tab="missions">Missions</button>
+        <button data-tab="guide">Guide</button>
+        <button data-tab="controls">Controls</button>
+        <button data-tab="settings">Settings</button>
+      </div>
+      <div id="tab-map" class="tab">
+        <canvas id="bigmap" width="768" height="768"></canvas>
+        <div class="map-legend">
+          Click the map to set a waypoint. <button id="btn-clear-wp">Clear waypoint</button><br>
+          <span style="color:#ffd400">●</span> Mission
+          <span style="color:#2ecc71">●</span> Store
+          <span style="color:#4aa3ff">●</span> Safehouse
+          <span style="color:#c56cf0">●</span> Waypoint
+          <span style="color:#ff3b3b">●</span> Police / enemies
+        </div>
+      </div>
+      <div id="tab-missions" class="tab hidden">
+        <div id="stats"></div>
+        <div id="missions-list"></div>
+      </div>
+      <div id="tab-guide" class="tab hidden"><div class="guide-content"></div></div>
+      <div id="tab-controls" class="tab hidden"><div class="controls-content"></div></div>
+      <div id="tab-settings" class="tab hidden">
+        <label><input type="checkbox" id="opt-mute"> Mute sound (N)</label>
+        <p class="muted">Progress is saved in this browser. Use a safehouse (blue H) or Save below.</p>
+      </div>
+      <div class="pause-actions">
+        <button id="btn-resume" class="primary">Resume</button>
+        <button id="btn-save">Save</button>
+        <button id="btn-quit">Quit to title</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phone -->
+  <div id="phone" class="hidden">
+    <div class="phone-body">
+      <div class="phone-head">📱 Leonida Feed</div>
+      <div id="phone-feed"></div>
+      <div class="phone-actions">
+        <button id="phone-save">Quick save</button>
+        <button id="phone-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <template id="controls-template">
+    <table class="controls">
+      <tr><th>Move / Drive</th><td>W A S D or arrow keys</td></tr>
+      <tr><th>Aim / Shoot</th><td>Mouse + left click (or J / Ctrl with auto-aim)</td></tr>
+      <tr><th>Enter / exit vehicle</th><td>F or Enter</td></tr>
+      <tr><th>Handbrake / Sprint</th><td>Space (Shift also sprints)</td></tr>
+      <tr><th>Interact (rob, save)</th><td>Hold E</td></tr>
+      <tr><th>Switch weapon</th><td>Q, mouse wheel, or 1–5</td></tr>
+      <tr><th>Switch character</th><td>Tab</td></tr>
+      <tr><th>Radio station</th><td>R</td></tr>
+      <tr><th>Horn</th><td>H</td></tr>
+      <tr><th>Map / Pause</th><td>M / Esc or P</td></tr>
+      <tr><th>Phone</th><td>T</td></tr>
+      <tr><th>Mute</th><td>N</td></tr>
+      <tr><th>Touch</th><td>Left thumb joystick, buttons on the right</td></tr>
+    </table>
+    <p class="muted">Crimes raise your wanted level. Break line of sight with the police to lose stars. At 1–2 stars cops try to arrest you; from 2 stars they shoot; at 4+ a helicopter joins the chase.</p>
+  </template>
+
+  <script src="js/data.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/entities.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script>
+    for (const el of document.querySelectorAll('.controls-content')) el.innerHTML = document.getElementById('controls-template').innerHTML;
+  </script>
+</body>
+</html>
