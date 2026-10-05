@@ -19,9 +19,9 @@ const UI = {
     // Build the world in the background of the title screen
     setTimeout(() => {
       G.world = new World(2026);
+      Render.setupWorld(G.world);
       $('title-loading').classList.add('hidden');
       $('title-buttons').classList.remove('hidden');
-      this.titleCam = { x: 205 * T, y: 100 * T, t: 0 };
     }, 30);
     let last = performance.now();
     const loop = (now) => {
@@ -36,22 +36,15 @@ const UI = {
   frame(dt) {
     if (G.state === 'play') {
       update(dt);
-      Render.draw();
+      Render.draw(dt);
       this.updateHud(dt);
       this.drawMinimap();
     } else if (G.state === 'title' && G.world) {
       // Slow flyover of Vice City behind the title screen
-      const tc = this.titleCam;
-      tc.t += dt;
-      G.cam.x = tc.x + Math.sin(tc.t * 0.05) * 1800;
-      G.cam.y = tc.y + Math.cos(tc.t * 0.04) * 1800;
-      G.cam.zoom = Math.max(Render.W, Render.H) / 1400;
-      G.time = (17.5 * 60 + tc.t * 4) % (24 * 60);
       G.player = G.player || newPlayer('lucia', -9999, -9999);
-      G.player.x = -9999;
-      Render.draw();
+      Render.draw(dt);
     } else if (G.state === 'pause') {
-      Render.draw();
+      Render.draw(0);
     }
     G.keysPressed = {};
     G.touch.actionPressed = false;
@@ -65,7 +58,8 @@ const UI = {
     this.updateCharBadge();
     Sfx.init();
     const def = nextMission();
-    if (def) this.help(`Mission marker: ${def.title}. Follow the yellow route on the minimap.`, 7);
+    if (def) this.help(`Mission marker: ${def.title}. Follow the yellow route on the minimap. Click to look around with the mouse.`, 7);
+    this.lockPointer();
   },
 
   // ---------------------------------------------------------------- HUD
@@ -85,9 +79,18 @@ const UI = {
         this.subT = 3.5;
       } else $('subtitle').classList.remove('show');
     }
+    const ch = $('crosshair');
+    ch.classList.toggle('hidden', p.dead || (p.vehicle && G.camMode !== 'fp'));
+    ch.classList.toggle('kick', G.recoil > 0.5);
     this.hudT -= dt;
     if (this.hudT > 0) return;
     this.hudT = 0.1;
+    if (!p.dead) {
+      aimAngle();
+      const tgt = G.aimTarget;
+      ch.classList.toggle('enemy', !!tgt && (tgt === G.heli || tgt.kind === 'gang' || tgt.kind === 'cop'));
+      ch.classList.toggle('civ', !!tgt && tgt.kind === 'civ');
+    }
     const h = Math.floor(G.time / 60), m = Math.floor(G.time % 60);
     $('clock').textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}${G.rain > 0.3 ? ' 🌧' : ''}`;
     $('money').textContent = '$' + G.money.toLocaleString();
@@ -289,6 +292,9 @@ const UI = {
   pause(tab = 'map') {
     if (G.state !== 'play') return;
     G.state = 'pause';
+    this.pausedAt = performance.now();
+    G.mouse.down = false;
+    this.unlockPointer();
     $('pause').classList.remove('hidden');
     this.showTab(tab);
     Sfx.setStation(0);
@@ -299,6 +305,7 @@ const UI = {
     G.state = 'play';
     $('pause').classList.add('hidden');
     $('phone').classList.add('hidden');
+    this.lockPointer();
     if (G.player.vehicle && G.radio) Sfx.setStation(G.radio);
   },
 
@@ -312,6 +319,7 @@ const UI = {
   openPhone() {
     if (G.state !== 'play') return;
     G.state = 'pause';
+    this.unlockPointer();
     const feed = LEONIDA.newsFeed.slice().sort(() => Math.random() - 0.5).slice(0, 5);
     $('phone-feed').innerHTML = feed.map(([u, t]) => `<div class="post"><b>${u}</b><p>${escapeHtml(t)}</p></div>`).join('');
     $('phone').classList.remove('hidden');
@@ -330,6 +338,7 @@ const UI = {
     $('btn-resume').onclick = () => this.resume();
     $('btn-save').onclick = () => { if (G.mission) return alert('You can\'t save during a mission.'); saveGame(); this.resume(); };
     $('btn-quit').onclick = () => {
+      $('click-to-play').classList.add('hidden');
       $('pause').classList.add('hidden'); $('hud').classList.add('hidden'); $('touch').classList.add('hidden');
       $('title').classList.remove('hidden');
       this.buildTitle();
@@ -369,6 +378,7 @@ const UI = {
           case 'KeyM': this.pause('map'); break;
           case 'Escape': case 'KeyP': this.pause('missions'); break;
           case 'KeyT': this.openPhone(); break;
+          case 'KeyV': G.camMode = G.camMode === 'fp' ? 'chase' : 'fp'; this.help(G.camMode === 'fp' ? 'First-person driving camera' : 'Chase camera'); break;
           case 'KeyN': Sfx.setMuted(!Sfx.muted); $('opt-mute').checked = Sfx.muted; this.help(Sfx.muted ? 'Sound off' : 'Sound on'); break;
           case 'Digit1': case 'Digit2': case 'Digit3': case 'Digit4': case 'Digit5': {
             const w = LEONIDA.weapons[+e.code.slice(5) - 1];
@@ -376,16 +386,54 @@ const UI = {
             break;
           }
         }
-      } else if (G.state === 'pause' && (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'KeyM' || e.code === 'KeyT')) this.resume();
+      } else if (G.state === 'pause' && performance.now() - (this.pausedAt || 0) > 400 && (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'KeyM' || e.code === 'KeyT')) this.resume();
     });
     window.addEventListener('keyup', (e) => { G.keys[e.code] = false; });
     window.addEventListener('blur', () => { G.keys = {}; G.mouse.down = false; });
     const cv = $('game');
-    cv.addEventListener('mousemove', (e) => { G.mouse.x = e.clientX; G.mouse.y = e.clientY; G.mouse.moved = G.t; });
-    cv.addEventListener('mousedown', (e) => { if (e.button === 0) { G.mouse.down = true; G.mouse.moved = G.t; } Sfx.init(); });
+    document.addEventListener('mousemove', (e) => {
+      G.mouse.x = e.clientX; G.mouse.y = e.clientY;
+      if (document.pointerLockElement !== cv || G.state !== 'play') return;
+      this.look(e.movementX, e.movementY, 0.0022);
+    });
+    cv.addEventListener('mousedown', (e) => {
+      Sfx.init();
+      if (G.state !== 'play') return;
+      if (document.pointerLockElement !== cv && !this.isTouch) { this.lockPointer(); return; }
+      if (e.button === 0) G.mouse.down = true;
+      if (e.button === 2 && G.player.vehicle) { G.camMode = G.camMode === 'fp' ? 'chase' : 'fp'; }
+    });
+    document.addEventListener('pointerlockchange', () => {
+      const locked = document.pointerLockElement === cv;
+      $('click-to-play').classList.toggle('hidden', locked || G.state !== 'play' || this.isTouch);
+      // Pressing Esc releases the pointer: treat it like opening the pause menu
+      if (!locked && G.state === 'play' && !this.unlocking && this.wasLocked) this.pause('missions');
+      this.wasLocked = locked;
+      this.unlocking = false;
+    });
     window.addEventListener('mouseup', (e) => { if (e.button === 0) G.mouse.down = false; });
     cv.addEventListener('contextmenu', (e) => e.preventDefault());
     cv.addEventListener('wheel', (e) => { if (G.state === 'play') cycleWeapon(e.deltaY > 0 ? 1 : -1); }, { passive: true });
+  },
+
+  look(dx, dy, sens) {
+    const L = G.look;
+    if (G.player.vehicle) L.carOff = clamp(L.carOff + dx * sens, -2.6, 2.6);
+    else L.yaw += dx * sens;
+    G.mouse.moved = G.t;
+    L.pitch = clamp(L.pitch - dy * sens, -1.35, 1.35);
+  },
+
+  lockPointer() {
+    const cv = $('game');
+    if (this.isTouch || !cv.requestPointerLock) return;
+    try { const r = cv.requestPointerLock(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* not allowed without a gesture */ }
+    $('click-to-play').classList.toggle('hidden', document.pointerLockElement === cv);
+  },
+
+  unlockPointer() {
+    if (document.pointerLockElement) { this.unlocking = true; document.exitPointerLock(); }
+    $('click-to-play').classList.add('hidden');
   },
 
   nextRadio() {
@@ -427,6 +475,23 @@ const UI = {
       }
     };
     zone.addEventListener('touchend', end); zone.addEventListener('touchcancel', end);
+    const lookZone = $('look-zone');
+    let lid = null, lx = 0, ly = 0;
+    lookZone.addEventListener('touchstart', (e) => {
+      const t = e.changedTouches[0];
+      lid = t.identifier; lx = t.clientX; ly = t.clientY;
+      G.touch.active = true;
+      e.preventDefault();
+    }, { passive: false });
+    lookZone.addEventListener('touchmove', (e) => {
+      for (const t of e.changedTouches) {
+        if (t.identifier !== lid) continue;
+        this.look(t.clientX - lx, t.clientY - ly, 0.006);
+        lx = t.clientX; ly = t.clientY;
+      }
+      e.preventDefault();
+    }, { passive: false });
+    lookZone.addEventListener('touchend', (e) => { for (const t of e.changedTouches) if (t.identifier === lid) lid = null; });
     const btn = (elId, down, up) => {
       const el = $(elId);
       el.addEventListener('touchstart', (e) => { e.preventDefault(); G.touch.active = true; el.classList.add('down'); down(); Sfx.init(); }, { passive: false });
