@@ -38,10 +38,10 @@ To publish it, enable **GitHub Pages → Source: GitHub Actions** in the reposit
 |---|---|
 | Move / drive | WASD (arrow keys turn the view) |
 | Look around | Mouse (click the game to capture the pointer) |
-| Shoot | Left click (or J / Ctrl) |
+| Shoot | Left click or Space (J also works; in a car: click or J) |
 | Driving camera | V or right click |
 | Enter / exit vehicle | F / Enter |
-| Handbrake / sprint | Space / Shift |
+| Sprint / handbrake | Shift on foot / Space in a vehicle |
 | Interact (rob, save) | Hold E |
 | Weapons | Q, mouse wheel, 1–5 |
 | Switch character | Tab |

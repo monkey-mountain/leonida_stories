@@ -1,5 +1,5 @@
 // Offline cache for the web app.
-const CACHE = 'leonida-v2-3d';
+const CACHE = 'leonida-v3';
 const ASSETS = [
   './', './index.html', './css/style.css', './manifest.webmanifest', './icons/icon.svg',
   './js/vendor/three.min.js', './js/data.js', './js/world.js', './js/audio.js', './js/entities.js', './js/game.js', './js/render.js', './js/ui.js',
