@@ -17,6 +17,9 @@ const G = {
   keys: {}, mouse: { x: 0, y: 0, down: false, moved: -10 },
   touch: { active: false, jx: 0, jy: 0, fire: false, brake: false },
   cam: { x: 0, y: 0, zoom: 1, shake: 0 },
+  look: { yaw: 0, pitch: 0, carOff: 0 },
+  camMode: 'fp',
+  recoil: 0,
   mission: null,
   completed: new Set(),
   char: 'lucia',
@@ -88,6 +91,7 @@ function loadChar(id) {
   p.health = c.health; p.armor = c.armor; p.ammo = c.ammo; p.weapon = c.weapon in c.ammo ? c.weapon : 'fist';
   G.player = p;
   G.char = id;
+  G.look.yaw = 0; G.look.pitch = 0; G.look.carOff = 0;
 }
 
 function storeChar() {
@@ -173,6 +177,7 @@ function fire(shooter, x, y, a, wid, owner) {
   if (wd.pellets === 0) {
     // melee
     Sfx.punch();
+    if (owner === 'player') G.recoil = 1;
     for (const p of G.peds) {
       if (p.dead || p === shooter) continue;
       const d = Math.hypot(p.x - x, p.y - y);
@@ -191,6 +196,7 @@ function fire(shooter, x, y, a, wid, owner) {
     });
   }
   G.particles.push(new Particle(x + Math.cos(a) * 16, y + Math.sin(a) * 16, 0, 0, 0.06, 6, '#ffe28a'));
+  if (owner === 'player') G.recoil = 1;
   G.flashLights.push({ x, y, r: 90, t: 0.06 });
   panicAround(x, y, 380);
   if (owner === 'player' && G.stars === 0) {
@@ -295,6 +301,7 @@ function enterOrExitVehicle() {
   best.ai = null;
   p.vehicle = best;
   G.lastCar = best;
+  G.look.carOff = 0; G.look.pitch = 0;
   UI.vehicleName(best.spec.name);
   if (G.radio) Sfx.setStation(G.radio);
 }
@@ -313,6 +320,8 @@ function exitVehicle(force) {
   }
   if (!placed) { const f = G.world.nearestFree(v.x, v.y, false); p.x = f.x; p.y = f.y; }
   p.vehicle = null;
+  G.look.yaw = v.a + G.look.carOff;
+  G.look.carOff = 0;
   Sfx.setStation(0);
 }
 
@@ -325,26 +334,26 @@ function cycleWeapon(dir = 1) {
   p.weapon = owned[i];
 }
 
+// The crosshair is always in the middle of the screen, so the aim direction is the
+// camera yaw. A small aim assist snaps to targets close to the crosshair.
 function aimAngle() {
   const p = G.player;
-  if (G.touch.active || G.t - G.mouse.moved > 4) {
-    // Auto-aim at the nearest threat in front of the player
-    const base = p.vehicle ? p.vehicle.a : p.a;
-    let best = null, bs = Infinity;
-    for (const e of G.peds) {
-      if (e.dead) continue;
-      const d = dist(e, p);
-      if (d > 420) continue;
-      const ang = Math.abs(wrapAngle(Math.atan2(e.y - p.y, e.x - p.x) - base));
-      const hostile = e.kind === 'gang' || (e.kind === 'cop' && G.stars > 0);
-      const score = d * (hostile ? 0.5 : 1.2) + ang * 300;
-      if (ang < 1.1 && score < bs) { bs = score; best = e; }
-    }
-    if (G.heli && dist(G.heli, p) < 420) best = best || G.heli;
-    return best ? Math.atan2(best.y - p.y, best.x - p.x) : base;
-  }
-  const wm = screenToWorld(G.mouse.x, G.mouse.y);
-  return Math.atan2(wm.y - p.y, wm.x - p.x);
+  const base = p.vehicle ? p.vehicle.a + G.look.carOff : G.look.yaw;
+  const assist = G.touch.active ? 0.22 : 0.06;
+  let best = null, bs = Infinity;
+  const consider = (e, hostile) => {
+    const d = dist(e, p);
+    if (d > 520 || d < 1) return;
+    const ang = Math.abs(wrapAngle(Math.atan2(e.y - p.y, e.x - p.x) - base));
+    if (ang > assist) return;
+    if (!G.world.lineOfSight(p.x, p.y, e.x, e.y)) return;
+    const score = ang * 400 + d * (hostile ? 0.3 : 1);
+    if (score < bs) { bs = score; best = e; }
+  };
+  for (const e of G.peds) if (!e.dead) consider(e, e.kind === 'gang' || (e.kind === 'cop' && G.stars > 0));
+  if (G.heli) consider(G.heli, true);
+  G.aimTarget = best;
+  return best ? Math.atan2(best.y - p.y, best.x - p.x) : base;
 }
 
 function updatePlayer(dt) {
@@ -361,10 +370,8 @@ function updatePlayer(dt) {
     if (G.touch.active) {
       const mag = Math.hypot(G.touch.jx, G.touch.jy);
       if (mag > 0.2) {
-        const desired = Math.atan2(G.touch.jy, G.touch.jx);
-        const diff = wrapAngle(desired - v.a);
-        if (Math.abs(diff) > 2.4 && v.forwardSpeed < 60) { throttle = -1; steer = -Math.sign(diff); }
-        else { steer = clamp(diff * 2.2, -1, 1); throttle = mag * (Math.abs(diff) > 1.6 ? 0.5 : 1); }
+        throttle = clamp(-G.touch.jy * 1.4, -1, 1);
+        steer = clamp(G.touch.jx * 1.3, -1, 1);
       }
       if (G.touch.brake) throttle = -1;
     }
@@ -375,7 +382,7 @@ function updatePlayer(dt) {
       for (const side of [-1, 1]) addDecal(v.x - c * v.spec.l * 0.35 - s * side * v.spec.w * 0.4, v.y - s * v.spec.l * 0.35 + c * side * v.spec.w * 0.4, 'skid', v.a);
     }
     p.x = v.x; p.y = v.y; p.a = v.a;
-    if (shooting && p.cool <= 0 && p.weapon !== 'fist' && p.ammo[p.weapon] > 0 && p.weapon !== 'rifle') {
+    if (shooting && p.cool <= 0 && p.weapon !== 'fist' && p.ammo[p.weapon] > 0) {
       // drive-by
       const wd = weaponDef(p.weapon);
       const a = aimAngle();
@@ -388,9 +395,14 @@ function updatePlayer(dt) {
     return;
   }
 
-  let mx = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0);
-  let my = (k.KeyS || k.ArrowDown ? 1 : 0) - (k.KeyW || k.ArrowUp ? 1 : 0);
-  if (G.touch.active && Math.hypot(G.touch.jx, G.touch.jy) > 0.15) { mx = G.touch.jx; my = G.touch.jy; }
+  // Arrow keys turn the view for keyboard-only play
+  G.look.yaw += ((k.ArrowRight ? 1 : 0) - (k.ArrowLeft ? 1 : 0)) * 2.6 * dt;
+  let strafe = (k.KeyD ? 1 : 0) - (k.KeyA ? 1 : 0);
+  let fwd = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0);
+  if (G.touch.active && Math.hypot(G.touch.jx, G.touch.jy) > 0.15) { strafe = G.touch.jx; fwd = -G.touch.jy; }
+  const yaw = G.look.yaw;
+  let mx = Math.cos(yaw) * fwd - Math.sin(yaw) * strafe;
+  let my = Math.sin(yaw) * fwd + Math.cos(yaw) * strafe;
   const mag = Math.hypot(mx, my);
   const sprint = k.ShiftLeft || k.ShiftRight || k.Space || (G.touch.active && mag > 0.9);
   const sp = sprint ? 230 : 140;
@@ -401,9 +413,9 @@ function updatePlayer(dt) {
     p.walk += dt * (sprint ? 16 : 11);
     p.speed = sp;
   } else p.speed = 0;
-  const aiming = shooting || (G.t - G.mouse.moved < 4 && !G.touch.active);
-  if (aiming) p.a = aimAngle();
-  else if (mag > 0) p.a = Math.atan2(my, mx);
+  p.a = G.look.yaw;
+  if (shooting) p.a = aimAngle();
+  else G.aimTarget = null;
 
   if (shooting && p.cool <= 0) {
     if (!(p.ammo[p.weapon] > 0)) cycleWeapon(1);
@@ -1000,15 +1012,9 @@ function update(dt) {
   const r = G.world.regionAt(Math.floor(p.x / T), Math.floor(p.y / T));
   if (r && r !== G.region) { G.region = r; UI.areaName(r.name); }
 
-  // camera
-  const tgt = p.vehicle || p;
-  const vx = p.vehicle ? p.vehicle.vx : 0, vy = p.vehicle ? p.vehicle.vy : 0;
-  const lead = 0.45;
-  G.cam.x += (tgt.x + vx * lead - G.cam.x) * Math.min(1, dt * 4);
-  G.cam.y += (tgt.y + vy * lead - G.cam.y) * Math.min(1, dt * 4);
-  const span = p.vehicle ? 900 + Math.min(600, p.vehicle.speed * 1.1) : 760;
-  const zoomT = Math.max(Render.W, Render.H) / span;
-  G.cam.zoom += (zoomT - G.cam.zoom) * Math.min(1, dt * 1.5);
+  // camera (the 3D renderer follows the player directly)
+  G.cam.x = p.x; G.cam.y = p.y;
+  G.recoil = Math.max(0, G.recoil - dt * 8);
   G.cam.shake = Math.max(0, G.cam.shake - dt * 25);
 
   // GPS
@@ -1203,10 +1209,4 @@ function spawnParkedCars() {
       G.vehicles.push(v);
     }
   }
-}
-
-// ------------------------------------------------------------------ input helpers
-function screenToWorld(sx, sy) {
-  const z = G.cam.zoom;
-  return { x: (sx - Render.W / 2) / z + G.cam.x, y: (sy - Render.H / 2) / z + G.cam.y };
 }

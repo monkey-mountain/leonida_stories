@@ -1,6 +1,6 @@
 # Leonida Stories — a GTA VI–inspired web game
 
-A fan-made, top-down open-world game that runs in the browser, set in **Leonida**, the state from *Grand Theft Auto VI*. It needs no build step and no dependencies, and it installs as a Progressive Web App (PWA) that works offline.
+A fan-made **3D first-person** open-world game that runs in the browser (rendered with Three.js), set in **Leonida**, the state from *Grand Theft Auto VI*. It needs no build step and no installs (Three.js is bundled in `js/vendor/`), and it installs as a Progressive Web App (PWA) that works offline.
 
 > Fan project. Not affiliated with or endorsed by Rockstar Games or Take-Two Interactive. All gameplay, missions, art and audio here are original and generated in code.
 
@@ -16,6 +16,9 @@ python3 -m http.server 8000
 To publish it, enable **GitHub Pages → Source: GitHub Actions** in the repository settings. The workflow in `.github/workflows/pages.yml` deploys on every push to `main`.
 
 ## Features
+
+- **3D first-person shooter view:** mouse-look aiming with a crosshair, a weapon in hand with recoil and muzzle flash, and real 3D buildings (lit windows at night), palm and pine trees, street lamps, cars and people.
+- **Driving cameras:** cockpit view or chase view (V or right click), with speed-based field of view and headlights at night.
 
 - **A procedurally built Leonida (256×256 tiles):** Vice City, the Leonida Keys, Grassrivers, Port Gellhorn, Ambrosia and Mount Kalaga National Park, connected by highways and bridges.
 - **Two protagonists:** switch between Lucia Caminos and Jason Duval with Tab. Each one keeps their own position, health and weapons.
@@ -33,8 +36,10 @@ To publish it, enable **GitHub Pages → Source: GitHub Actions** in the reposit
 
 | Action | Keys |
 |---|---|
-| Move / drive | WASD / arrows |
-| Aim & shoot | Mouse + left click (J / Ctrl for auto-aim) |
+| Move / drive | WASD (arrow keys turn the view) |
+| Look around | Mouse (click the game to capture the pointer) |
+| Shoot | Left click (or J / Ctrl) |
+| Driving camera | V or right click |
 | Enter / exit vehicle | F / Enter |
 | Handbrake / sprint | Space / Shift |
 | Interact (rob, save) | Hold E |
@@ -63,7 +68,8 @@ js/data.js            Lore, regions, vehicles, weapons, missions
 js/world.js           Map generation, road graph, chunked tile rendering, minimap
 js/entities.js        Vehicles (physics), pedestrians, particles
 js/game.js            Game loop systems: player, traffic, police, crime, missions
-js/render.js          World drawing, lighting, weather
+js/render.js          Three.js 3D renderer: city geometry, models, first-person camera, lighting, weather
+js/vendor/three.min.js Three.js r149 (MIT)
 js/audio.js           Web Audio synth and radio
 js/ui.js              HUD, menus, input, main loop
 sw.js, manifest.webmanifest   PWA / offline support

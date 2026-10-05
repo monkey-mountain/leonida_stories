@@ -250,3 +250,23 @@ table.controls th { color: var(--muted); font-weight: 600; width: 45%; }
 @media (pointer: coarse) {
   canvas#game { cursor: default; }
 }
+
+/* ------------------------------------------------------------------ First-person */
+#crosshair { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+#crosshair i { position: absolute; background: #fff; box-shadow: 0 0 2px #000; transition: transform .08s; }
+#crosshair i:nth-child(1) { width: 2px; height: 8px; left: -1px; top: -14px; }
+#crosshair i:nth-child(2) { width: 2px; height: 8px; left: -1px; top: 6px; }
+#crosshair i:nth-child(3) { width: 8px; height: 2px; left: -14px; top: -1px; }
+#crosshair i:nth-child(4) { width: 8px; height: 2px; left: 6px; top: -1px; }
+#crosshair.kick i:nth-child(1) { transform: translateY(-4px); }
+#crosshair.kick i:nth-child(2) { transform: translateY(4px); }
+#crosshair.kick i:nth-child(3) { transform: translateX(-4px); }
+#crosshair.kick i:nth-child(4) { transform: translateX(4px); }
+#crosshair.enemy i { background: #ff3b3b; }
+#crosshair.civ i { background: #ffd400; }
+#click-to-play {
+  position: fixed; left: 50%; top: 58%; transform: translateX(-50%); background: var(--panel); padding: 12px 22px; border-radius: 10px;
+  font-weight: 700; text-align: center; pointer-events: none; border: 1px solid rgba(255, 255, 255, 0.2);
+}
+#click-to-play small { font-weight: 400; color: var(--muted); }
+#look-zone { position: absolute; right: 0; top: 0; width: 55%; height: 100%; pointer-events: auto; }

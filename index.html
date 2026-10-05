@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <title>Leonida Stories — GTA VI fan web game</title>
-  <meta name="description" content="A fan-made, GTA VI-inspired open-world browser game set in the state of Leonida. Play as Lucia and Jason in Vice City, the Keys, Grassrivers and more.">
+  <title>Leonida Stories — GTA VI fan web game (3D)</title>
+  <meta name="description" content="A fan-made, GTA VI-inspired 3D first-person open-world browser game set in the state of Leonida. Play as Lucia and Jason in Vice City, the Keys, Grassrivers and more.">
   <meta name="theme-color" content="#14051f">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -17,6 +17,7 @@
 
   <!-- HUD -->
   <div id="hud" class="hidden">
+    <div id="crosshair"><i></i><i></i><i></i><i></i></div>
     <div id="hud-tr">
       <div id="clock">09:00</div>
       <div id="money">$0</div>
@@ -38,12 +39,14 @@
     <div id="progress"><div></div></div>
   </div>
 
+  <div id="click-to-play" class="hidden">Click to look around<br><small>Esc pauses</small></div>
   <div id="big"><div class="big-title"></div><div class="big-sub"></div></div>
   <div id="flash"></div>
   <div id="hurt"></div>
 
   <!-- Touch controls -->
   <div id="touch" class="hidden">
+    <div id="look-zone"></div>
     <div id="joy-zone"></div>
     <div id="joy-base"><div id="joy-knob"></div></div>
     <div class="tbtns">
@@ -149,8 +152,10 @@
 
   <template id="controls-template">
     <table class="controls">
-      <tr><th>Move / Drive</th><td>W A S D or arrow keys</td></tr>
-      <tr><th>Aim / Shoot</th><td>Mouse + left click (or J / Ctrl with auto-aim)</td></tr>
+      <tr><th>Move / Drive</th><td>W A S D (arrow keys turn the view)</td></tr>
+      <tr><th>Look around</th><td>Mouse (click the game to capture the mouse)</td></tr>
+      <tr><th>Shoot</th><td>Left click (or J / Ctrl)</td></tr>
+      <tr><th>Driving camera</th><td>V or right click: cockpit / chase view</td></tr>
       <tr><th>Enter / exit vehicle</th><td>F or Enter</td></tr>
       <tr><th>Handbrake / Sprint</th><td>Space (Shift also sprints)</td></tr>
       <tr><th>Interact (rob, save)</th><td>Hold E</td></tr>
@@ -161,11 +166,12 @@
       <tr><th>Map / Pause</th><td>M / Esc or P</td></tr>
       <tr><th>Phone</th><td>T</td></tr>
       <tr><th>Mute</th><td>N</td></tr>
-      <tr><th>Touch</th><td>Left thumb joystick, buttons on the right</td></tr>
+      <tr><th>Touch</th><td>Left thumb: move · Drag on the right: look · Buttons: shoot, car, etc.</td></tr>
     </table>
     <p class="muted">Crimes raise your wanted level. Break line of sight with the police to lose stars. At 1–2 stars cops try to arrest you; from 2 stars they shoot; at 4+ a helicopter joins the chase.</p>
   </template>
 
+  <script src="js/vendor/three.min.js"></script>
   <script src="js/data.js"></script>
   <script src="js/world.js"></script>
   <script src="js/audio.js"></script>

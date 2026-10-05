@@ -463,6 +463,19 @@ class World {
     return cv;
   }
 
+  // Ground-only texture for the 3D renderer (buildings and trees are real geometry)
+  renderGround(cx, cy, res) {
+    const cv = document.createElement('canvas');
+    cv.width = res; cv.height = res;
+    const g = cv.getContext('2d');
+    g.scale(res / (CHUNK * T), res / (CHUNK * T));
+    const ox = cx * CHUNK, oy = cy * CHUNK;
+    for (let j = 0; j < CHUNK; j++) {
+      for (let i = 0; i < CHUNK; i++) this.drawTile(g, ox + i, oy + j, i * T, j * T);
+    }
+    return cv;
+  }
+
   drawTile(g, x, y, px, py) {
     const t = this.get(x, y);
     const v = hash2(x, y, 1);
