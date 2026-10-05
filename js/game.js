@@ -360,7 +360,8 @@ function updatePlayer(dt) {
   const p = G.player, k = G.keys;
   if (p.dead) return;
   p.cool -= dt;
-  const shooting = G.mouse.down || k.KeyJ || k.ControlLeft || G.touch.fire;
+  // Space fires on foot; in a vehicle it stays the handbrake (drive-by with click or J)
+  const shooting = G.mouse.down || k.KeyJ || (!p.vehicle && k.Space) || G.touch.fire;
 
   if (p.vehicle) {
     const v = p.vehicle;
@@ -404,7 +405,7 @@ function updatePlayer(dt) {
   let mx = Math.cos(yaw) * fwd - Math.sin(yaw) * strafe;
   let my = Math.sin(yaw) * fwd + Math.cos(yaw) * strafe;
   const mag = Math.hypot(mx, my);
-  const sprint = k.ShiftLeft || k.ShiftRight || k.Space || (G.touch.active && mag > 0.9);
+  const sprint = k.ShiftLeft || k.ShiftRight || (G.touch.active && mag > 0.9);
   const sp = sprint ? 230 : 140;
   if (mag > 0) {
     mx /= Math.max(1, mag); my /= Math.max(1, mag);
