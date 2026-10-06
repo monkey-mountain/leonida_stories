@@ -10,7 +10,7 @@
   <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/icon.svg">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -29,6 +29,7 @@
     <div id="char-badge"></div>
     <div id="minimap-wrap"><canvas id="minimap" width="200" height="200"></canvas></div>
     <div id="speedo"></div>
+    <div id="nowplaying"></div>
     <div id="help"></div>
     <div id="area"></div>
     <div id="vehname"></div>
@@ -79,7 +80,7 @@
         <button id="btn-guide">Leonida Guide</button>
         <button id="btn-controls">Controls</button>
       </div>
-      <p class="release">Real GTA VI release date: <b>November 19, 2026</b> · PS5 &amp; Xbox Series X|S</p>
+      <p class="release"><span class="muted">Build v4 · </span>Real GTA VI release date: <b>November 19, 2026</b> · PS5 &amp; Xbox Series X|S</p>
     </div>
   </div>
 
@@ -128,6 +129,7 @@
       <div id="tab-controls" class="tab hidden"><div class="controls-content"></div></div>
       <div id="tab-settings" class="tab hidden">
         <label><input type="checkbox" id="opt-mute"> Mute sound (N)</label>
+        <label>📻 Radio volume <input type="range" id="opt-radio-vol" min="0" max="100" value="80"></label>
         <p class="muted">Progress is saved in this browser. Use a safehouse (blue H) or Save below.</p>
       </div>
       <div class="pause-actions">
@@ -141,6 +143,8 @@
   <!-- Phone -->
   <div id="phone" class="hidden">
     <div class="phone-body">
+      <div class="phone-head">📻 Radio</div>
+      <div id="phone-radio"></div>
       <div class="phone-head">📱 Leonida Feed</div>
       <div id="phone-feed"></div>
       <div class="phone-actions">
@@ -161,7 +165,7 @@
       <tr><th>Interact (rob, save)</th><td>Hold E</td></tr>
       <tr><th>Switch weapon</th><td>Q, mouse wheel, or 1–5</td></tr>
       <tr><th>Switch character</th><td>Tab</td></tr>
-      <tr><th>Radio station</th><td>R</td></tr>
+      <tr><th>Radio station</th><td>R (Shift+R goes back) · also in the phone (T)</td></tr>
       <tr><th>Horn</th><td>H</td></tr>
       <tr><th>Map / Pause</th><td>M / Esc or P</td></tr>
       <tr><th>Phone</th><td>T</td></tr>
@@ -171,14 +175,15 @@
     <p class="muted">Crimes raise your wanted level. Break line of sight with the police to lose stars. At 1–2 stars cops try to arrest you; from 2 stars they shoot; at 4+ a helicopter joins the chase.</p>
   </template>
 
-  <script src="js/vendor/three.min.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/audio.js"></script>
-  <script src="js/entities.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/render.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/vendor/three.min.js?v=4"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/world.js?v=4"></script>
+  <script src="js/audio.js?v=4"></script>
+  <script src="js/radio.js?v=4"></script>
+  <script src="js/entities.js?v=4"></script>
+  <script src="js/game.js?v=4"></script>
+  <script src="js/render.js?v=4"></script>
+  <script src="js/ui.js?v=4"></script>
   <script>
     for (const el of document.querySelectorAll('.controls-content')) el.innerHTML = document.getElementById('controls-template').innerHTML;
   </script>

@@ -270,3 +270,19 @@ table.controls th { color: var(--muted); font-weight: 600; width: 45%; }
 }
 #click-to-play small { font-weight: 400; color: var(--muted); }
 #look-zone { position: absolute; right: 0; top: 0; width: 55%; height: 100%; pointer-events: auto; }
+
+/* ------------------------------------------------------------------ Radio */
+#nowplaying {
+  position: absolute; left: 232px; bottom: 110px; background: var(--panel); border-left: 3px solid var(--teal); padding: 8px 14px; border-radius: 8px;
+  opacity: 0; transform: translateY(8px); transition: all .4s; display: flex; flex-direction: column; min-width: 180px;
+}
+#nowplaying.show { opacity: 1; transform: none; }
+#nowplaying small { color: var(--teal); font-weight: 700; font-size: 12px; }
+#nowplaying b { font-size: 16px; }
+#nowplaying span { color: var(--muted); font-size: 13px; }
+#phone-radio { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 8px 0 12px; }
+#phone-radio button { padding: 7px 6px; font-size: 12px; border-radius: 8px; text-align: left; line-height: 1.2; }
+#phone-radio button.on { background: linear-gradient(90deg, var(--teal), #2b8fd6); color: #031018; font-weight: 700; border: none; }
+#tab-settings label { margin-bottom: 12px; }
+#opt-radio-vol { width: 180px; }
+@media (max-height: 520px) { #nowplaying { left: 140px; bottom: auto; top: 50px; min-width: 140px; } }
