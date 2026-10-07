@@ -28,7 +28,8 @@ To publish it, enable **GitHub Pages → Source: GitHub Actions** in the reposit
 - **Six-mission story:** prison release, a car theft against the clock, a store robbery, a swamp shootout, a truck takedown, and a bank heist finale.
 - **Robbable stores,** pickups (weapons, health, armor, cash), and safehouses where you save and sleep.
 - **World and HUD:** day/night cycle with street lights and headlights, rain, a minimap with GPS routing, and a full map where you set waypoints.
-- **Sound:** procedural radio stations, plus synthesized weapon, engine and siren sounds.
+- **Radio:** six stations that play anywhere (R / Shift+R, or the phone's radio app): synthwave, trap, reggae, country and reggaeton songs composed live in Web Audio, plus WCTR talk radio read aloud by the browser's speech synthesizer. Volume is in Settings.
+- **Sound effects:** synthesized weapon, engine and siren sounds.
 - **Phone feed, keyboard and mouse controls, and touch controls on mobile.**
 - **Leonida Guide** with what has been announced about the real game (see below).
 
@@ -45,7 +46,7 @@ To publish it, enable **GitHub Pages → Source: GitHub Actions** in the reposit
 | Interact (rob, save) | Hold E |
 | Weapons | Q, mouse wheel, 1–5 |
 | Switch character | Tab |
-| Radio / horn | R / H |
+| Radio / horn | R (Shift+R back) / H |
 | Map / pause / phone | M / Esc / T |
 
 ## Real-world data used
@@ -70,7 +71,8 @@ js/entities.js        Vehicles (physics), pedestrians, particles
 js/game.js            Game loop systems: player, traffic, police, crime, missions
 js/render.js          Three.js 3D renderer: city geometry, models, first-person camera, lighting, weather
 js/vendor/three.min.js Three.js r149 (MIT)
-js/audio.js           Web Audio synth and radio
+js/audio.js           Web Audio sound effects
+js/radio.js           Radio stations: generated music and talk radio
 js/ui.js              HUD, menus, input, main loop
 sw.js, manifest.webmanifest   PWA / offline support
 ```

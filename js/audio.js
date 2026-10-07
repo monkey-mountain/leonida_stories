@@ -41,6 +41,8 @@ const Sfx = {
   setMuted(m) {
     this.muted = m;
     if (this.master) this.master.gain.value = m ? 0 : 0.5;
+    // speech synthesis bypasses the master gain, so restart or stop the radio explicitly
+    if (this.station) this.setStation(this.station);
   },
 
   noise(dur, freq, vol, type = 'lowpass') {
@@ -93,35 +95,9 @@ const Sfx = {
     if (sirenOn) this.siren.osc.frequency.setValueAtTime(700 + Math.sin(t * 5) * 250, t);
   },
 
-  // Procedural radio: each station is a different scale/tempo loop
+  // Radio is implemented in radio.js
   setStation(i) {
     this.station = i;
-    if (this.radioTimer) { clearInterval(this.radioTimer); this.radioTimer = null; }
-    if (!this.ctx || i === 0 || i === 5) return;
-    const styles = {
-      1: { bpm: 118, scale: [0, 3, 5, 7, 10], root: 220, wave: 'square', bass: 'sawtooth' },  // synth pop
-      2: { bpm: 140, scale: [0, 1, 5, 7, 8], root: 196, wave: 'sawtooth', bass: 'sine' },     // bass
-      3: { bpm: 96, scale: [0, 2, 4, 7, 9], root: 262, wave: 'triangle', bass: 'sine' },      // island
-      4: { bpm: 104, scale: [0, 2, 4, 5, 7, 9], root: 196, wave: 'triangle', bass: 'triangle' }, // country
-      6: { bpm: 100, scale: [0, 2, 3, 5, 7, 8, 10], root: 233, wave: 'square', bass: 'triangle' }, // latin
-    };
-    const s = styles[i];
-    let step = 0;
-    const beat = 60 / s.bpm / 2;
-    const prog = [0, 5, 3, 4];
-    this.radioTimer = setInterval(() => {
-      if (this.station !== i) return;
-      const bar = Math.floor(step / 8) % prog.length;
-      const deg = prog[bar];
-      const semi = (n) => s.root * Math.pow(2, n / 12);
-      if (step % 2 === 0) this.tone(semi(s.scale[deg % s.scale.length] - 24), beat * 1.8, 0.07, s.bass);
-      if (step % 4 === 0) this.noise(0.05, 150, 0.12);
-      if (step % 4 === 2) this.noise(0.08, 3000, 0.04, 'highpass');
-      if (Math.random() < 0.55) {
-        const n = s.scale[Math.floor(Math.random() * s.scale.length)] + (Math.random() < 0.3 ? 12 : 0);
-        this.tone(semi(n), beat * 0.9, 0.035, s.wave);
-      }
-      step++;
-    }, beat * 1000);
+    if (typeof Radio !== 'undefined') Radio.play(this.muted ? 0 : i);
   },
 };

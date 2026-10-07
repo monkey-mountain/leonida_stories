@@ -58,7 +58,12 @@ const UI = {
     this.updateCharBadge();
     Sfx.init();
     const def = nextMission();
-    if (def) this.help(`Mission marker: ${def.title}. Follow the yellow route on the minimap. Click to look around with the mouse.`, 7);
+    if (def) this.help(`Mission marker: ${def.title}. Follow the yellow route on the minimap. Click to look around with the mouse. Press R to change the radio station.`, 8);
+    // Buttons keep keyboard focus after a click; Space would "press" them again instead of firing
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    let saved = null;
+    try { saved = localStorage.getItem('leonida-radio'); } catch (e) { /* storage unavailable */ }
+    this.setRadio(saved != null ? +saved : 1);
     this.lockPointer();
   },
 
@@ -306,7 +311,7 @@ const UI = {
     $('pause').classList.add('hidden');
     $('phone').classList.add('hidden');
     this.lockPointer();
-    if (G.player.vehicle && G.radio) Sfx.setStation(G.radio);
+    if (G.radio) Sfx.setStation(G.radio);
   },
 
   showTab(tab) {
@@ -321,6 +326,7 @@ const UI = {
     G.state = 'pause';
     this.unlockPointer();
     const feed = LEONIDA.newsFeed.slice().sort(() => Math.random() - 0.5).slice(0, 5);
+    this.buildRadioApp();
     $('phone-feed').innerHTML = feed.map(([u, t]) => `<div class="post"><b>${u}</b><p>${escapeHtml(t)}</p></div>`).join('');
     $('phone').classList.remove('hidden');
   },
@@ -346,6 +352,14 @@ const UI = {
       Sfx.setStation(0);
     };
     $('opt-mute').onchange = (e) => Sfx.setMuted(e.target.checked);
+    $('opt-radio-vol').oninput = (e) => {
+      Radio.setVolume(+e.target.value / 100);
+      try { localStorage.setItem('leonida-radio-vol', e.target.value); } catch (err) { /* storage unavailable */ }
+    };
+    try {
+      const v = localStorage.getItem('leonida-radio-vol');
+      if (v != null) { $('opt-radio-vol').value = v; Radio.setVolume(+v / 100); }
+    } catch (err) { /* storage unavailable */ }
     $('bigmap').addEventListener('click', (e) => {
       const r = e.target.getBoundingClientRect();
       const tx = (e.clientX - r.left) / r.width * MW, ty = (e.clientY - r.top) / r.height * MH;
@@ -364,7 +378,8 @@ const UI = {
   // ---------------------------------------------------------------- input
   bindInput() {
     window.addEventListener('keydown', (e) => {
-      if (['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
+      const typing = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+      if (G.state === 'play' && !typing && ['Tab', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
       if (e.repeat) return;
       G.keys[e.code] = true;
       G.keysPressed[e.code] = true;
@@ -374,7 +389,7 @@ const UI = {
           case 'KeyF': case 'Enter': if (!G.player.dead) enterOrExitVehicle(); break;
           case 'Tab': switchCharacter(); this.updateCharBadge(); break;
           case 'KeyQ': cycleWeapon(1); break;
-          case 'KeyR': this.nextRadio(); break;
+          case 'KeyR': this.nextRadio(e.shiftKey ? -1 : 1); break;
           case 'KeyM': this.pause('map'); break;
           case 'Escape': case 'KeyP': this.pause('missions'); break;
           case 'KeyT': this.openPhone(); break;
@@ -388,7 +403,10 @@ const UI = {
         }
       } else if (G.state === 'pause' && performance.now() - (this.pausedAt || 0) > 400 && (e.code === 'Escape' || e.code === 'KeyP' || e.code === 'KeyM' || e.code === 'KeyT')) this.resume();
     });
-    window.addEventListener('keyup', (e) => { G.keys[e.code] = false; });
+    window.addEventListener('keyup', (e) => {
+      G.keys[e.code] = false;
+      if (G.state === 'play' && e.code === 'Space') e.preventDefault();
+    });
     window.addEventListener('blur', () => { G.keys = {}; G.mouse.down = false; });
     const cv = $('game');
     document.addEventListener('mousemove', (e) => {
@@ -436,13 +454,33 @@ const UI = {
     $('click-to-play').classList.add('hidden');
   },
 
-  nextRadio() {
-    G.radio = (G.radio + 1) % LEONIDA.radio.length;
-    if (G.player.vehicle) {
-      Sfx.setStation(G.radio);
-      this.vehicleName(G.player.vehicle.spec.name);
-      if (!G.radio) this.help('Radio off');
-    } else this.help(`Radio preset: ${LEONIDA.radio[G.radio]}`);
+  nextRadio(dir = 1) {
+    this.setRadio((G.radio + dir + LEONIDA.radio.length) % LEONIDA.radio.length);
+  },
+
+  setRadio(i) {
+    G.radio = i;
+    try { localStorage.setItem('leonida-radio', String(i)); } catch (e) { /* storage unavailable */ }
+    Sfx.init();
+    Sfx.setStation(i);
+    if (!i) { this.help('📻 Radio off'); $('nowplaying').classList.remove('show'); }
+    else if (i === 5) this.help(`📻 ${LEONIDA.radio[i]}`);
+    this.buildRadioApp();
+  },
+
+  nowPlaying(station, title, artist) {
+    const el = $('nowplaying');
+    el.innerHTML = `<small>📻 ${escapeHtml(station)}</small><b>${escapeHtml(title)}</b><span>${escapeHtml(artist)}</span>`;
+    el.classList.add('show');
+    clearTimeout(this.npTimer);
+    this.npTimer = setTimeout(() => el.classList.remove('show'), 6000);
+  },
+
+  buildRadioApp() {
+    const el = $('phone-radio');
+    if (!el) return;
+    el.innerHTML = LEONIDA.radio.map((n, i) => `<button data-st="${i}" class="${i === G.radio ? 'on' : ''}">${i === 0 ? '⏹ Off' : escapeHtml(n)}</button>`).join('');
+    for (const b of el.querySelectorAll('button')) b.onclick = () => this.setRadio(+b.dataset.st);
   },
 
   bindTouch() {
@@ -515,5 +553,5 @@ function escapeHtml(s) {
 window.addEventListener('load', () => UI.init());
 
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-  navigator.serviceWorker.register('sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 }

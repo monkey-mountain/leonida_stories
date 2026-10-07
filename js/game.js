@@ -303,7 +303,6 @@ function enterOrExitVehicle() {
   G.lastCar = best;
   G.look.carOff = 0; G.look.pitch = 0;
   UI.vehicleName(best.spec.name);
-  if (G.radio) Sfx.setStation(G.radio);
 }
 
 function exitVehicle(force) {
@@ -322,7 +321,6 @@ function exitVehicle(force) {
   p.vehicle = null;
   G.look.yaw = v.a + G.look.carOff;
   G.look.carOff = 0;
-  Sfx.setStation(0);
 }
 
 function cycleWeapon(dir = 1) {
@@ -460,6 +458,7 @@ function respawn(kind) {
   G.vehicles = G.vehicles.filter(v => v.ctrl !== 'police');
   G.heli = null;
   G.cam.x = np.x; G.cam.y = np.y;
+  if (G.radio) Sfx.setStation(G.radio);
   UI.help(kind === 'wasted' ? `Hospital bill: $${fee}` : `Bail and legal fees: $${fee}. Weapons confiscated.`);
 }
 
