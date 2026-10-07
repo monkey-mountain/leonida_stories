@@ -13,6 +13,8 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
+The page asks search engines not to index it (`<meta name="robots" content="noindex">` in `index.html`); remove that line if you want it to show up in search results.
+
 To publish it, enable **GitHub Pages → Source: GitHub Actions** in the repository settings. The workflow in `.github/workflows/pages.yml` deploys on every push to `main`.
 
 ## Features
